@@ -1,0 +1,41 @@
+<resources>
+    <string name="app_name">iCab</string>
+    <string name="action_settings">Log Out</string>
+    <string name="draw_open">open</string>
+    <string name="draw_close">close</string>
+    <!-- TODO: Remove or change this placeholder text -->
+    <string name="hello_blank_fragment">Hello blank fragment</string>
+    <string name="next">Next</string>
+    <string name="title_activity_navigation_bar">Passenger Home</string>
+
+    <string name="navigation_drawer_open">Open navigation drawer</string>
+    <string name="navigation_drawer_close">Close navigation drawer</string>
+    <string name="title_activity_navication_bar2">Navication_bar2</string>
+    <string name="title_activity_maps">Map</string>
+
+
+    <string name="m_bike">BIKE</string>
+    <string name="m_boat">BOAT</string>
+    <string name="m_car">CAR</string>
+    <string name="m_airport">AIRPORT</string>
+    <string name="title_activity_login">Sign in</string>
+
+    <!-- Strings related to login -->
+    <string name="prompt_email">User Name</string>
+    <string name="prompt_password">Password</string>
+    <string name="action_sign_in">Sign in</string>
+    <string name="action_sign_in_short">Sign in</string>
+    <string name="error_invalid_email">This email address is invalid</string>
+    <string name="error_invalid_password">This password is too short</string>
+    <string name="error_incorrect_password">This password is incorrect</string>
+    <string name="error_field_required">This field is required</string>
+    <string name="permission_rationale">"Contacts permissions are needed for providing email
+        completions."
+    </string>
+    <string name="app_names">Card View</string>
+    <string name="action_setting">Settings</string>
+    <string name="action_add_favourite">Add to Favourites</string>
+    <string name="action_play_next">Play Next</string>
+    <string name="backdrop_title">LOVE MUSICS</string>
+    <string name="backdrop_subtitle">This season top 20 music</string>
+</resources>
