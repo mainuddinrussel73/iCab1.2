@@ -1,35 +1,60 @@
 package com.example.mainuddin.icab12;
 
+import android.content.Intent;
 import android.content.res.Resources;
 import android.graphics.Rect;
 import android.os.Bundle;
+import android.os.StrictMode;
+import android.support.annotation.Nullable;
 import android.support.design.widget.AppBarLayout;
 import android.support.design.widget.CollapsingToolbarLayout;
+import android.support.v4.app.NavUtils;
 import android.support.v7.app.AppCompatActivity;
+import android.support.v7.widget.ActivityChooserView;
 import android.support.v7.widget.DefaultItemAnimator;
 import android.support.v7.widget.GridLayoutManager;
+import android.support.v7.widget.PopupMenu;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
 import android.util.TypedValue;
+import android.view.MenuItem;
 import android.view.View;
 import android.widget.ImageView;
+import android.widget.TextView;
+import android.widget.Toast;
 
 import com.bumptech.glide.Glide;
 
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Stack;
+import java.util.Vector;
 
 public class RecylerViewMain extends AppCompatActivity {
 
     private RecyclerView recyclerView;
     private AlbumsAdapter adapter;
     private List<Album> albumList;
+    private String total,username,email;
+    private static final String find_url = "jdbc:mysql://192.168.1.6:3306/user_details";
+    private  static  final String user = "test";
+    private  static final String pass = "test123";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         //getSupportActionBar().hide();
+        Bundle bundle = getIntent().getExtras();
+        total = bundle.getString("list");
+        username = bundle.getString("name");
+        email = bundle.getString("email");
         setContentView(R.layout.activity_recycle);
+
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
@@ -40,21 +65,35 @@ public class RecylerViewMain extends AppCompatActivity {
         albumList = new ArrayList<>();
         adapter = new AlbumsAdapter(this, albumList);
 
-        RecyclerView.LayoutManager mLayoutManager = new GridLayoutManager(this, 2);
+        RecyclerView.LayoutManager mLayoutManager = new GridLayoutManager(this, 1);
         recyclerView.setLayoutManager(mLayoutManager);
-        recyclerView.addItemDecoration(new GridSpacingItemDecoration(2, dpToPx(10), true));
+        recyclerView.addItemDecoration(new GridSpacingItemDecoration(1, dpToPx(5), true));
         recyclerView.setItemAnimator(new DefaultItemAnimator());
         recyclerView.setAdapter(adapter);
 
         prepareAlbums();
 
         try {
-            Glide.with(this).load(R.drawable.cover).into((ImageView) findViewById(R.id.backdrop));
+            Glide.with(this).load(R.drawable.mater).into((ImageView) findViewById(R.id.backdrop));
         } catch (Exception e) {
             e.printStackTrace();
         }
+        getSupportActionBar().setDisplayHomeAsUpEnabled(true);
     }
-
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        switch (item.getItemId()) {
+            // Respond to the action bar's Up/Home button
+            case R.id.rootLayout:
+                Intent intent = new Intent(this,Navigation_bar.class);
+                intent.putExtra("list",total);
+                intent.putExtra("name",username);
+                intent.putExtra("email",email);
+                startActivity(intent);
+                return true;
+        }
+        return super.onOptionsItemSelected(item);
+    }
     /**
      * Initializing collapsing toolbar
      * Will show and hide the toolbar title on scroll
@@ -77,7 +116,7 @@ public class RecylerViewMain extends AppCompatActivity {
                     scrollRange = appBarLayout.getTotalScrollRange();
                 }
                 if (scrollRange + verticalOffset == 0) {
-                    collapsingToolbar.setTitle(getString(R.string.app_name));
+                    collapsingToolbar.setTitle("Previous Trips");
                     isShow = true;
                 } else if (isShow) {
                     collapsingToolbar.setTitle(" ");
@@ -86,54 +125,55 @@ public class RecylerViewMain extends AppCompatActivity {
             }
         });
     }
+    class tripsInfo{
+        tripsInfo(){
 
+        }
+        String trips;
+        String comments;
+        String rating;
+    }
+    private Stack<tripsInfo> tripsInfos = new Stack<>();
+
+    public void parse_passengerDetails (String mName){
+        StrictMode.ThreadPolicy policy = new StrictMode.ThreadPolicy.Builder().permitAll().build();
+        StrictMode.setThreadPolicy(policy);
+        try {
+            Class.forName("com.mysql.jdbc.Driver");
+            Connection connection = DriverManager.getConnection(find_url,user,pass);
+            String result = "Database connection is successful";
+            Statement statement = connection.createStatement();
+            ResultSet resultSet = statement.executeQuery("SELECT `trips` , `comments` , `rating` FROM `passenger_details` WHERE `name` =  " + "\"" + mName + "\"");
+
+            while (resultSet.next()){
+                tripsInfo tripsInfo = new tripsInfo();
+                tripsInfo.trips = resultSet.getString(1);
+                tripsInfo.comments = resultSet.getString(2);
+                tripsInfo.rating = resultSet.getString(3);
+                //result+=resultSet.getString(1) + resultSet.getString(2)+resultSet.getString(3);
+                tripsInfos.push(tripsInfo);
+            }
+        } catch (ClassNotFoundException e) {
+            e.printStackTrace();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+    }
     /**
      * Adding few albums for testing
      */
     private void prepareAlbums() {
         int[] covers = new int[]{
                 R.drawable.album1,
-                R.drawable.album2,
-                R.drawable.album3,
-                R.drawable.album4,
-                R.drawable.album5,
-                R.drawable.album6,
-                R.drawable.album7,
-                R.drawable.album8,
-                R.drawable.album9,
-                R.drawable.album10,
-                R.drawable.album11};
-
-        Album a = new Album("Maroon5", 13, covers[0]);
-        albumList.add(a);
-
-        a = new Album("Sugar Ray", 8, covers[1]);
-        albumList.add(a);
-
-        a = new Album("Bon Jovi", 11, covers[2]);
-        albumList.add(a);
-
-        a = new Album("The Corrs", 12, covers[3]);
-        albumList.add(a);
-
-        a = new Album("The Cranberries", 14, covers[4]);
-        albumList.add(a);
-
-        a = new Album("Westlife", 1, covers[5]);
-        albumList.add(a);
-
-        a = new Album("Black Eyed Peas", 11, covers[6]);
-        albumList.add(a);
-
-        a = new Album("VivaLaVida", 14, covers[7]);
-        albumList.add(a);
-
-        a = new Album("The Cardigans", 11, covers[8]);
-        albumList.add(a);
-
-        a = new Album("Pussycat Dolls", 17, covers[9]);
-        albumList.add(a);
-
+               };
+        parse_passengerDetails(username);
+        while(tripsInfos.empty()!=true) {
+            tripsInfo t;
+            t = tripsInfos.pop();
+            Album a = new Album(t.trips,t.rating,t.comments, R.drawable.taxi);
+            albumList.add(a);
+        }
         adapter.notifyDataSetChanged();
     }
 

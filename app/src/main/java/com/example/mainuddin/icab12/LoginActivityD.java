@@ -41,6 +41,8 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadFactory;
 import java.util.logging.Logger;
 
 import static android.Manifest.permission.READ_CONTACTS;
@@ -48,7 +50,7 @@ import static android.Manifest.permission.READ_CONTACTS;
 /**
  * A login screen that offers login via email/password.
  */
-public class LoginActivity extends AppCompatActivity implements LoaderCallbacks<Cursor> {
+public class LoginActivityD extends AppCompatActivity implements LoaderCallbacks<Cursor> {
 
     /**
      * Id to identity READ_CONTACTS permission request.
@@ -230,8 +232,8 @@ public class LoginActivity extends AppCompatActivity implements LoaderCallbacks<
         mPasswordView.setError(null);
 
         // Store values at the time of the login attempt.
-        String name = mNameView.getText().toString();
-        String password = mPasswordView.getText().toString();
+        final String name = mNameView.getText().toString();
+        final String password = mPasswordView.getText().toString();
 
         boolean cancel = false;
         View focusView = null;
@@ -268,28 +270,36 @@ public class LoginActivity extends AppCompatActivity implements LoaderCallbacks<
             // perform the user login attempt.
 
             //showProgress(true);
-            boolean find = checkUser(name,password);
-            //showProgress(true);
-            if(find==true) {
+            boolean find  = checkUser(name,password);
+
+
+            showProgress(true);
+            //Thread thread = new Thread();
+            if (find == true) {
+                //showProgress(false);
                 String total = fatchData(userName);
                 //for(passenger p : passengers){
-                  //  System.out.println(p.getNames()+p.getComment());
+                //  System.out.println(p.getNames()+p.getComment());
                 //}
-                Intent intent = new Intent(this,Navigation_bar.class);
+                Intent intent = new Intent(this, Navication_bar2.class);
                 //Toast.makeText(getBaseContext(),passengers.get(0).getComment(),Toast.LENGTH_SHORT).show();
-                intent.putExtra("name",userName);
-                intent.putExtra("email",email);
-                intent.putExtra("list",total);
+                intent.putExtra("name", userName);
+                intent.putExtra("email", email);
+                intent.putExtra("list", total);
                 startActivity(intent);
 
-                cancel = false;
+                //cancel = false;
                 showProgress(false);
-            }
-            else {
+            } else {
                 mNameView.setError("User Not Find");
-                cancel = true;
+                //cancel = true;
                 showProgress(false);
             }
+
+
+
+
+
         }
     }
 
@@ -376,11 +386,13 @@ public class LoginActivity extends AppCompatActivity implements LoaderCallbacks<
     private void addEmailsToAutoComplete(List<String> emailAddressCollection) {
         //Create adapter to tell the AutoCompleteTextView what to show in its dropdown list.
         ArrayAdapter<String> adapter =
-                new ArrayAdapter<>(LoginActivity.this,
+                new ArrayAdapter<>(LoginActivityD.this,
                         android.R.layout.simple_dropdown_item_1line, emailAddressCollection);
 
         mNameView.setAdapter(adapter);
     }
+
+
 
 
     private interface ProfileQuery {

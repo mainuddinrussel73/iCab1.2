@@ -4,13 +4,20 @@ package com.example.mainuddin.icab12;
  * Created by mainuddin on 5/26/2017.
  */
 
+import android.graphics.Color;
+import android.location.Address;
+import android.location.Geocoder;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.StrictMode;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
+import android.support.v4.util.Pair;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Toast;
 
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.maps.CameraUpdateFactory;
@@ -21,7 +28,16 @@ import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.CameraPosition;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.MarkerOptions;
+import com.google.android.gms.maps.model.PolylineOptions;
 
+import org.json.JSONObject;
+
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
+import java.net.URL;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
@@ -29,18 +45,35 @@ import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 
 
 public class ConfirmActivityD extends Fragment implements OnMapReadyCallback {
     GoogleMap map;
     GoogleApiClient mGoogleApiClient;
+    String username;
+    String curruser;
+    double latitute;
+    double longitute;
+    double pass_lat;
+    double pass_long;
+    String cityname;
+    ArrayList<Pair<String,String>> locatiosOfthePassenger = new ArrayList<>();
     List<driver> drivers = new ArrayList<>();
-    private static final String find_url = "jdbc:mysql://192.168.1.5:3306/user_details";
+    List<Navication_bar2.userInfo> userInfos = new ArrayList<>();
+    private static final String find_url = "jdbc:mysql://192.168.1.6:3306/user_details";
     private  static  final String user = "test";
     private  static final String pass = "test123";
-    public ConfirmActivityD(List<driver> drivers1){
-        this.drivers = drivers1;
+    public ConfirmActivityD(double latitute ,double longitute,double to_lat,double to_long,List<Navication_bar2.userInfo> list,String username,String curr){
+        this.latitute = latitute;
+        this.longitute = longitute;
+        this.userInfos = list;
+        this.username  = username;
+        this.curruser = curr;
+        this.pass_lat = to_lat;
+        this.pass_long = to_long;
     }
 
     @Override
@@ -67,6 +100,25 @@ public class ConfirmActivityD extends Fragment implements OnMapReadyCallback {
         } */
 
         mapFragment.getMapAsync(this);
+    }
+    private String getAddress(double latitude, double longitude) {
+        StringBuilder result = new StringBuilder();
+        Locale locale = Locale.getDefault();
+        try {
+            Geocoder geocoder = new Geocoder(getContext(),locale);
+            List<Address> addresses = geocoder.getFromLocation(latitude, longitude, 1);
+            if (addresses.size() > 0) {
+                Address address = addresses.get(0);
+                result.append(address.getLocality()).append("\n");
+                result.append(address.getCountryName()).append("\n");
+                result.append(address.getAddressLine(0));
+                cityname = address.getAddressLine(0);
+            }
+        } catch (IOException e) {
+            Log.e("tag", e.getMessage());
+        }
+
+        return result.toString();
     }
     public void addDriver(String name,String type ,double latitute,double longitute){
        // List<driver> drivers = new ArrayList<>();
@@ -101,7 +153,8 @@ public class ConfirmActivityD extends Fragment implements OnMapReadyCallback {
             if(resultSet.next()){
                 result+=resultSetMetaData.getColumnName(1) + ":" + resultSet.getString(1) + "\n";
                 System.out.println(result);
-                return true;}
+                return true;
+            }
             //else return false;
 
         } catch (ClassNotFoundException e) {
@@ -113,8 +166,9 @@ public class ConfirmActivityD extends Fragment implements OnMapReadyCallback {
 
         return false;
     }
-    public void updateDriver(String name,String type ,double latitute,double longitute){
-        // List<driver> drivers = new ArrayList<>();
+
+    public void findPassenger(String sername){
+        //List<Navigation_bar.userInfo>  userInfos = new ArrayList<>();
         StrictMode.ThreadPolicy policy = new StrictMode.ThreadPolicy.Builder().permitAll().build();
         StrictMode.setThreadPolicy(policy);
         try {
@@ -122,10 +176,14 @@ public class ConfirmActivityD extends Fragment implements OnMapReadyCallback {
             Connection connection = DriverManager.getConnection(find_url,user,pass);
             String result = "Database connection is successful";
             Statement statement = connection.createStatement();
-            int resultSet = statement.executeUpdate("INSERT INTO `locations`(`name`, `type`, `latitute`, `longitute`) VALUES  ( + " + "\"" +name +"\""+" , "+ "\""+type +"\"" +"," + latitute + "," + longitute +" )");
-            // ResultSetMetaData resultSetMetaData = resultSet.getMetaData();
-
-
+            ResultSet resultSet = statement.executeQuery("SELECT `latitute`, `longitute` FROM `locations` WHERE `name` <> " + "\"" + sername + "\"" + " and `type` <> " + "\"" + "passenger" + "\"");
+            ResultSetMetaData resultSetMetaData = resultSet.getMetaData();
+            while(resultSet.next()){
+                result+=resultSetMetaData.getColumnName(1) + ":" + resultSet.getString(1) + "\n";
+                result+=resultSetMetaData.getColumnName(2) + ":" + resultSet.getString(2) + "\n";
+                Log.d("locations names : ",resultSet.getString(1)+":"+resultSet.getString(2));
+                locatiosOfthePassenger.add(new Pair<String, String>(resultSet.getString(1),resultSet.getString(2)));
+            }
 
         } catch (ClassNotFoundException e) {
             e.printStackTrace();
@@ -136,27 +194,27 @@ public class ConfirmActivityD extends Fragment implements OnMapReadyCallback {
     @Override
     public void onMapReady(GoogleMap googleMap){
         map = googleMap;
+        String address = getAddress(latitute,longitute);
+        //Toast.makeText(getContext(),address,Toast.LENGTH_LONG);
+        //System.out.println("////////////........" + address+".....///////////////////");
+        LatLng origin = new LatLng(23.7940,90.4043);
+        LatLng dest = new LatLng(pass_lat,pass_long);
+        findPassenger(username);
+        String url = getDirectionsUrl(origin, dest);
 
-        GPSTracker gps = new GPSTracker(getContext());
-        double latitude = gps.getLatitude();
-        double longitude = gps.getLongitude();
-        //LatLng latLng = new LatLng(latitude,longitude);
+        ConfirmActivityD.DownloadTask downloadTask = new ConfirmActivityD.DownloadTask();
+
+        // Start downloading json data from Google Directions API
+        downloadTask.execute(url);
         double latitudes[] = new double[10];
 
         double longitudes[] = new double[10];
 
         String names[] = new String[10];
 
-        names[0] = "Baki-al-bahar";
-        latitudes[0] = latitude;
-        longitudes[0] = longitude;
-        if(checkDriver(names[0])==false){
-            addDriver(names[0], "driver", latitudes[0] + .0056, longitudes[0]);
-        }else{
-            System.out.println("Duplicate key");
-        }
-        int j=1;
-        for(driver u : drivers){
+        int f =0;
+        int j=0;
+        for(Navication_bar2.userInfo u : userInfos){
             String s = u.latitute;
             Double d = Double.parseDouble(s);
             String s1 = u.longitute;
@@ -164,26 +222,35 @@ public class ConfirmActivityD extends Fragment implements OnMapReadyCallback {
             latitudes[j] = d.doubleValue();
             longitudes[j] = d1.doubleValue();
             names[j] = u.name;
+            System.out.println(u.name);
+            if(u.name== username){
+                Toast.makeText(getContext(),username,Toast.LENGTH_LONG).show();
+            }
             j++;
         }
         //String result = backgroundWork.return_string();
         //System.out.println(result);
+        MarkerOptions marker1 = new MarkerOptions().position(new LatLng(pass_lat,pass_long));
+        marker1.icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_YELLOW));
+        map.addMarker(marker1);
         for (int i = 0; i < j; i++) {
 
             // Adding a marker
             MarkerOptions marker = new MarkerOptions().position(new LatLng(latitudes[i], longitudes[i])).title(names[i]);
             // changing marker color
-            if (i == 0) {
+            //Toast.makeText(getContext(),username,Toast.LENGTH_LONG).show();
+            if (names[i].equals(username)) {
                 marker.icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_GREEN));
+                marker.title(names[i]+"Place : "+cityname);
             }
-            else marker.icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_AZURE));
+            else if(latitudes[i]!=pass_lat && longitudes[i]!=pass_long) marker.icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_AZURE));
 
             map.addMarker(marker);
 
             // Move the camera to last position with a zoom level
-            if (i == 0) {
+            if (names[i].equals(username)) {
                 CameraPosition cameraPosition = new CameraPosition.Builder()
-                        .target(new LatLng(latitude, longitude)).zoom(12).build();
+                        .target(new LatLng(latitute,longitute)).zoom(12).build();
 
                 map.animateCamera(CameraUpdateFactory
                         .newCameraPosition(cameraPosition));
@@ -191,7 +258,174 @@ public class ConfirmActivityD extends Fragment implements OnMapReadyCallback {
         }
 
 
+    }
+    private String getDirectionsUrl(LatLng origin,LatLng dest){
 
+        // Origin of route
+        String str_origin = "origin="+origin.latitude+","+origin.longitude;
+
+        // Destination of route
+        String str_dest = "destination="+dest.latitude+","+dest.longitude;
+
+        // Sensor enabled
+        String sensor = "sensor=false";
+
+        // Building the parameters to the web service
+        String parameters = str_origin+"&"+str_dest+"&"+sensor;
+
+        // Output format
+        String output = "json";
+
+        // Building the url to the web service
+        String url = "https://maps.googleapis.com/maps/api/directions/"+output+"?"+parameters;
+
+        return url;
+    }
+
+    /** A method to download json data from url */
+    private String downloadUrl(String strUrl) throws IOException {
+        String data = "";
+        InputStream iStream = null;
+        HttpURLConnection urlConnection = null;
+        try{
+            URL url = new URL(strUrl);
+
+            // Creating an http connection to communicate with url
+            urlConnection = (HttpURLConnection) url.openConnection();
+
+            // Connecting to url
+            urlConnection.connect();
+
+            // Reading data from url
+            iStream = urlConnection.getInputStream();
+
+            BufferedReader br = new BufferedReader(new InputStreamReader(iStream));
+
+            StringBuffer sb  = new StringBuffer();
+
+            String line = "";
+            while( ( line = br.readLine())  != null){
+                sb.append(line);
+            }
+
+            data = sb.toString();
+
+            br.close();
+
+        }catch(Exception e){
+            //Log.d("Exception while downloading url", e.toString());
+        }finally{
+            iStream.close();
+            urlConnection.disconnect();
+        }
+        return data;
+    }
+
+    // Fetches data from url passed
+    private class DownloadTask extends AsyncTask<String, Void, String> {
+
+        // Downloading data in non-ui thread
+        @Override
+        protected String doInBackground(String... url) {
+
+            // For storing data from web service
+            String data = "";
+
+            try{
+                // Fetching the data from web service
+                data = downloadUrl(url[0]);
+            }catch(Exception e){
+                Log.d("Background Task",e.toString());
+            }
+            return data;
+        }
+
+        // Executes in UI thread, after the execution of
+        // doInBackground()
+        @Override
+        protected void onPostExecute(String result) {
+            super.onPostExecute(result);
+
+            ConfirmActivityD.ParserTask parserTask = new ConfirmActivityD.ParserTask();
+
+            // Invokes the thread for parsing the JSON data
+            parserTask.execute(result);
+        }
+    }
+
+    /** A class to parse the Google Places in JSON format */
+    private class ParserTask extends AsyncTask<String, Integer, List<List<HashMap<String,String>>> > {
+
+        // Parsing the data in non-ui thread
+        @Override
+        protected List<List<HashMap<String, String>>> doInBackground(String... jsonData) {
+
+            JSONObject jObject;
+            List<List<HashMap<String, String>>> routes = null;
+
+            try{
+                jObject = new JSONObject(jsonData[0]);
+                DirectionsJSONParser parser = new DirectionsJSONParser();
+
+                // Starts parsing data
+                routes = parser.parse(jObject);
+            }catch(Exception e){
+                e.printStackTrace();
+            }
+            return routes;
+        }
+
+        // Executes in UI thread, after the parsing process
+        @Override
+        protected void onPostExecute(List<List<HashMap<String, String>>> result) {
+            ArrayList<LatLng> points = null;
+            PolylineOptions lineOptions = null;
+            MarkerOptions markerOptions = new MarkerOptions();
+            String distance = "";
+            String duration = "";
+
+            if(result.size()<1){
+                Toast.makeText(getContext(), "No Points", Toast.LENGTH_SHORT).show();
+                return;
+            }
+
+            // Traversing through all the routes
+            for(int i=0;i<result.size();i++){
+                points = new ArrayList<LatLng>();
+                lineOptions = new PolylineOptions();
+
+                // Fetching i-th route
+                List<HashMap<String, String>> path = result.get(i);
+
+                // Fetching all the points in i-th route
+                for(int j=0;j<path.size();j++){
+                    HashMap<String,String> point = path.get(j);
+
+                    if(j==0){    // Get distance from the list
+                        distance = (String)point.get("distance");
+                        continue;
+                    }else if(j==1){ // Get duration from the list
+                        duration = (String)point.get("duration");
+                        continue;
+                    }
+
+                    double lat = Double.parseDouble(point.get("lat"));
+                    double lng = Double.parseDouble(point.get("lng"));
+                    LatLng position = new LatLng(lat, lng);
+
+                    points.add(position);
+                }
+
+                // Adding all the points in the route to LineOptions
+                lineOptions.addAll(points);
+                lineOptions.width(2);
+                lineOptions.color(Color.RED);
+            }
+            //Toast.makeText(getContext(),"Distance:"+distance + ", Duration:"+duration,Toast.LENGTH_LONG).show();
+
+            // Drawing polyline in the Google Map for the i-th route
+            map.addPolyline(lineOptions);
+        }
     }
 
 }

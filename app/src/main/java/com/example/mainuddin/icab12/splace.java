@@ -97,7 +97,7 @@ public class splace extends AppCompatActivity {
     }
     public void onCreateDriverHome(View view){
 
-        startActivity(new Intent(this,LoginActivity.class));
+        startActivity(new Intent(this,LoginActivityD.class));
 
     }
 

@@ -36,12 +36,32 @@
 
     </RelativeLayout>
 
+    <RelativeLayout
+        android:layout_width="wrap_content"
+        android:layout_height="192dp"
+        android:layout_gravity="top|left"
+        app:layout_anchor="@+id/include"
+        app:layout_anchorGravity="bottom|right">
+
+        <android.support.design.widget.FloatingActionButton
+            android:id="@+id/fab2"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="bottom|end"
+            android:layout_margin="@dimen/fab_margin"
+            app:srcCompat="@android:drawable/ic_menu_compass" />
+
+    </RelativeLayout>
+
     <android.support.design.widget.FloatingActionButton
         android:id="@+id/fab1"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_gravity="bottom|end"
-        android:layout_margin="@dimen/fab_margin"
+        android:layout_gravity="top|left"
+        android:layout_margin="16dp"
+        app:layout_anchor="@+id/include"
+        app:layout_anchorGravity="bottom|right"
         app:srcCompat="@android:drawable/ic_menu_search" />
+
 
 </android.support.design.widget.CoordinatorLayout>
